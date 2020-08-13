@@ -1,6 +1,7 @@
 #include "SerialUtils.h"
 
 #define bitRead(value, bit) (((value) >> (bit)) & 0x01)
+// #define __DEBUG_LOG__
 
 // uncomment this for 5-panel (PIU) mode
 // #define __5_PANEL__ 
@@ -50,7 +51,6 @@ PAD_READOUT_DATA padReadoutData;
 // keep track of poll rate
 long lastMillis = 0;
 int loops = 0;
-int pressure = 0;
 
 /**
  * Setup the IO pins
@@ -60,6 +60,7 @@ void setup() {
 
   // init IO pins
   for (int i = 0; i < NUM_INPUTS * 2; i++) {
+    pinMode(inputs[i], INPUT);
     pinMode(outputs[i], OUTPUT);
     thresholdData.thresholds[i] = DEFAULT_SENSITIVITY;
   }
@@ -79,9 +80,11 @@ void loop() {
   if (deltaMillis > 500) {
     padReadoutData.pollRate = (loops / (deltaMillis / 1000.0f));
 
+#ifdef __DEBUG_LOG__
     Serial.print("Current poll rate: ");
     Serial.print(padReadoutData.pollRate);
     Serial.println(" Hz");
+#endif
 
     lastMillis = currentMillis;
     loops = 0;
@@ -92,7 +95,7 @@ void loop() {
 
   // check if any of the buttons are pressed on player 1
   for (int i = 0; i < NUM_INPUTS; i++) {
-    pressure = analogRead(inputs[i]);
+    int pressure = analogRead(inputs[i]);
     padReadoutData.pressures[i] = pressure;
 
     if (pressure >= thresholdData.thresholds[i]) {
@@ -155,6 +158,7 @@ void checkSerialData() {
         thresholdData.thresholds[i] = receivedBytes[(i * 2) + 2] | (receivedBytes[(i * 2) + 3] << 8);
       }
       
+#ifdef __DEBUG_LOG__
       Serial.println("Reading threshold data from serial master");
       Serial.print("New thresholds: ");
       
@@ -164,6 +168,7 @@ void checkSerialData() {
       }
       
       Serial.println("");
+#endif
     }
     
     newData = false;

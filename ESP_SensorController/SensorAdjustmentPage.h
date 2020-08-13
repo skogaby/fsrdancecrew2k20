@@ -3,7 +3,8 @@
 
 // uncomment this for 5-panel (PIU) mode
 // #define __5_PANEL__ 
-#define NUM_PLAYERS 1
+
+#define NUM_PLAYERS 2
 
 #include <EmbAJAX.h>
 

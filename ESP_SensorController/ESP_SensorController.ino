@@ -163,7 +163,7 @@ void checkSerialData() {
       }
   
       // read the poll rate
-      padReadoutData.pollRate = receivedBytes[(NUM_INPUTS * 2) + 2] | (receivedBytes[(NUM_INPUTS * 2) + 3] << 8);
+      padReadoutData.pollRate = receivedBytes[(NUM_INPUTS * 4) + 2] | (receivedBytes[(NUM_INPUTS * 4) + 3] << 8);
   
       // update the UI elements with the new data
       for (int player = 0; player < NUM_PLAYERS; player++) {
