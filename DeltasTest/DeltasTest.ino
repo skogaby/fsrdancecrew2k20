@@ -29,6 +29,8 @@ uint16_t pollRate;
 unsigned long lastMillis = 0;
 uint16_t loops = 0;
 
+int readPressure(int player, int sensor);
+
 void setup() {
   Serial.begin(115200);
 
@@ -46,9 +48,26 @@ void setup() {
       digitalWrite(outputs[player][i], HIGH);
     }
   }
+  
+  int pressure;
 
-  // give the FSRs a sec to settle
-  delay(1000);
+  // take some initial readings before the main loop so we can establish baselines
+  for (int r = 0; r < numReadings; r++) {
+    for (int player = 0; player < NUM_PLAYERS; player++) {
+      for (int i = 0; i < NUM_INPUTS; i++) {
+        // keep a running record of the last X readings
+        pressure = readPressure(player, i);
+        readings[player][i]->addValue(pressure);
+    
+        // calculate the newest delta if it's not the first reading
+        if (r > 0) {
+          deltas[player][i]->addValue(pressure - lastReadings[player][i]);
+        }
+        
+        lastReadings[player][i] = pressure;
+      }
+    }
+  }
 }
 
 void loop() {
@@ -74,18 +93,8 @@ void loop() {
   // check if any of the buttons are pressed
   for (int player = 0; player < NUM_PLAYERS; player++) {
     for (int i = 0; i < NUM_INPUTS; i++) {
-      // P1 is read directly from analog pins, P2 is read from a mux
-      if (player == 0) {
-        pressure = analogRead(inputs[i]);
-      } else {
-        digitalWrite(MUX_0, bitRead(i, 0));
-        digitalWrite(MUX_1, bitRead(i, 1));
-        digitalWrite(MUX_2, bitRead(i, 2));
-        
-        pressure = analogRead(MUX_INPUT);
-      }
-  
       // keep a running record of the last X readings
+      pressure = readPressure(player, i);
       readings[player][i]->addValue(pressure);
   
       // calculate the newest delta
@@ -123,5 +132,18 @@ void loop() {
         }
       }
     } 
+  }
+}
+
+int readPressure(int player, int sensor) {
+  // P1 is read directly from analog pins, P2 is read from a mux
+  if (player == 0) {
+    return analogRead(inputs[sensor]);
+  } else {
+    digitalWrite(MUX_0, bitRead(sensor, 0));
+    digitalWrite(MUX_1, bitRead(sensor, 1));
+    digitalWrite(MUX_2, bitRead(sensor, 2));
+    
+    return analogRead(MUX_INPUT);
   }
 }
