@@ -28,36 +28,3 @@ void RunningSum::addValue(int f) {
     if (_idx == _size) _idx = 0;
     if (_cnt < _size) _cnt++;
 }
-
-int RunningSum::getElement(uint8_t idx) {
-    if (idx >=_cnt ) return NAN;
-    return _ar[idx];
-}
-
-int RunningSum::getLastElement()
-{
-  // if we haven't inserted at least 1 element, just return 0
-  if (_cnt > 0) {
-    if (_idx > 0) {
-      return _ar[_idx - 1];
-    } else {
-      return _ar[_size - 1];
-    }
-  } else {
-    return 0;
-  }
-}
-
-int RunningSum::getLatestDelta()
-{
-  // if we haven't inserted at least 2 elements, just return 0
-  if (_cnt > 1) {
-    if (_idx > 0) {
-      return _ar[_idx] - _ar[_idx - 1];
-    } else {
-      return _ar[_idx] - _ar[_size - 1];
-    }
-  } else {
-    return 0;
-  }
-}

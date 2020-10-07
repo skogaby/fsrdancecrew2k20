@@ -13,10 +13,6 @@ public:
     void clear();
     void addValue(int);
 
-    int getElement(uint8_t idx);
-    int getLastElement();
-    int getLatestDelta();
-    uint8_t getSize() { return _size; }
     uint8_t getCount() { return _cnt; }
     int getSum() { return _sum; }
 
