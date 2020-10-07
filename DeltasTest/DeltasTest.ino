@@ -1,3 +1,6 @@
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+
 #include "RunningSum.h"
 
 // define the number of players
@@ -14,7 +17,7 @@ int outputs[2][5] = { { 12, 11, 10, 9, 8 }, { 7, 6, 5, 4, 3 } };
 
 // for hit detection, we keep a running record of the last X number
 // of arrow readings and the deltas from their last readings
-int deltaThreshold = 60;
+int deltaThreshold = 40;
 int numReadings = 20;
 int releaseHysteresis = 8;
 
@@ -33,6 +36,10 @@ int readPressure(int player, int sensor);
 
 void setup() {
   Serial.begin(115200);
+
+  sbi(ADCSRA, ADPS2);
+  cbi(ADCSRA, ADPS1);
+  cbi(ADCSRA, ADPS0);
 
   // init IO pins
   for (int i = 0; i < NUM_INPUTS * 2; i++) {
