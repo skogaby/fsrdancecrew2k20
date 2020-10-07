@@ -4,7 +4,7 @@
 #define NUM_PLAYERS 2
 #define NUM_INPUTS 4
 int inputs[] = { A0, A1, A2, A3, A4 };
-int outputs[] = { 12, 11, 10, 9, 8, 7, 6, 5, 4, 3 };
+int outputs[2][5] = { { 12, 11, 10, 9, 8 }, { 7, 6, 5, 4, 3 } };
 
 // handle mux configuration for 2 player mode
 #define MUX_INPUT A5
@@ -14,7 +14,7 @@ int outputs[] = { 12, 11, 10, 9, 8, 7, 6, 5, 4, 3 };
 
 // for hit detection, we keep a running record of the last X number
 // of arrow readings and the deltas from their last readings
-int deltaThreshold = 40;
+int deltaThreshold = 60;
 int numReadings = 20;
 int releaseHysteresis = 8;
 
@@ -35,7 +35,6 @@ void setup() {
   // init IO pins
   for (int i = 0; i < NUM_INPUTS * 2; i++) {
     pinMode(inputs[i], INPUT);
-    pinMode(outputs[i], OUTPUT);
   }
 
   // setup some initial values
@@ -43,8 +42,13 @@ void setup() {
     for (int i = 0; i < NUM_INPUTS; i++) {
       readings[player][i] = new RunningSum(numReadings);
       deltas[player][i] = new RunningSum(numReadings);
+      pinMode(outputs[player][i], OUTPUT);
+      digitalWrite(outputs[player][i], HIGH);
     }
   }
+
+  // give the FSRs a sec to settle
+  delay(1000);
 }
 
 void loop() {
@@ -92,36 +96,30 @@ void loop() {
       // if running sum of deltas goes above our defined threshold,
       // trigger a press and set new lower bounds for release,
       // otherwise, check for a release
-      if (deltas[player][i]->getSum() > deltaThreshold) {
+      if (!states[player][i] && (deltas[player][i]->getSum() > deltaThreshold)) {
         // set a new release threshold based on the reading at the time we detected
         // the press (minus the delta + a small hysteresis factor)
         releaseThresholds[player][i] = pressure - deltaThreshold + releaseHysteresis;
+        states[player][i] = true;
+        
+        // turn on the panel once we calculate the release threshold
+        digitalWrite(outputs[player][i], LOW);
 
-        // this is a new press
-        if (!states[player][i]) {
-          states[player][i] = true;
-          
-          // turn on the panel once we calculate the release threshold
-          digitalWrite(outputs[i], LOW);
-  
-          // test output for my one test sensor
-          if (player == 0 && i == 0) {
-            Serial.println("ON");
-          }
+        // test output for my one test sensor
+        if (player == 0 && i == 0) {
+          Serial.println("1");
         }
-      } else if (pressure < releaseThresholds[player][i]) {
+      } else if (states[player][i] && (pressure < releaseThresholds[player][i])) {
         // new release
-        if (states[player][i]) {
-          states[player][i] = false;
-          releaseThresholds[player][i] = 0;
-          
-          // if the value is below the release threshold, turn off the panel
-          digitalWrite(outputs[i], HIGH);
+        states[player][i] = false;
+        releaseThresholds[player][i] = 0;
+        
+        // if the value is below the release threshold, turn off the panel
+        digitalWrite(outputs[player][i], HIGH);
 
-          // test output for my one test sensor
-          if (player == 0 && i == 0) {
-            Serial.println("OFF");
-          }
+        // test output for my one test sensor
+        if (player == 0 && i == 0) {
+          Serial.println("0");
         }
       }
     } 
