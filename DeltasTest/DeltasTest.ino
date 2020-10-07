@@ -8,12 +8,19 @@
 #define NUM_INPUTS 4
 int inputs[] = { A0, A1, A2, A3, A4 };
 int outputs[2][5] = { { 12, 11, 10, 9, 8 }, { 7, 6, 5, 4, 3 } };
+volatile uint8_t* outputPorts[2] = { &PORTB, &PORTD };
+// setup the HIGH portmaps here, the LOWs get set automatically via negation in the setup
+// these corresponse to output pin assignment { { 12, 11, 10, 9, 8 }, { 7, 6, 5, 4, 3 } }
+uint8_t outputPortMapsHigh[2][5] = { { B00010000, B00001000, B00000100, B00000010, B00000001 }, 
+                                     { B10000000, B01000000, B00100000, B00010000, B00001000 } };
+uint8_t outputPortMapsLow[2][5];
 
 // handle mux configuration for 2 player mode
-#define MUX_INPUT A5
-#define MUX_0 A6
-#define MUX_1 A7
-#define MUX_2 2 
+int muxInput = A5;
+// These correspond to pins A6, A7, and 2 respectively
+uint8_t muxSelectPortMapsHigh[] = { B01000000, B10000000, B00000100 };
+uint8_t muxSelectPortMapsLow[3];
+volatile uint8_t* muxSelectPorts[] = { &PORTC, &PORTC, &PORTD };
 
 // for hit detection, we keep a running record of the last X number
 // of arrow readings and the deltas from their last readings
@@ -37,6 +44,7 @@ int readPressure(int player, int sensor);
 void setup() {
   Serial.begin(115200);
 
+  // setup the ADC registers to run more quickly
   sbi(ADCSRA, ADPS2);
   cbi(ADCSRA, ADPS1);
   cbi(ADCSRA, ADPS0);
@@ -53,7 +61,12 @@ void setup() {
       deltas[player][i] = new RunningSum(numReadings);
       pinMode(outputs[player][i], OUTPUT);
       digitalWrite(outputs[player][i], HIGH);
+      outputPortMapsLow[player][i] = ~outputPortMapsHigh[player][i];
     }
+  }
+
+  for (int i = 0; i < 3; i++) {
+    muxSelectPortMapsLow[i] = ~muxSelectPortMapsHigh[i];
   }
   
   int pressure;
@@ -119,7 +132,7 @@ void loop() {
         states[player][i] = true;
         
         // turn on the panel once we calculate the release threshold
-        digitalWrite(outputs[player][i], LOW);
+        *(outputPorts[player]) &= outputPortMapsLow[player][i];
 
         // test output for my one test sensor
         if (player == 0 && i == 0) {
@@ -131,7 +144,7 @@ void loop() {
         releaseThresholds[player][i] = 0;
         
         // if the value is below the release threshold, turn off the panel
-        digitalWrite(outputs[player][i], HIGH);
+        *(outputPorts[player]) |= outputPortMapsHigh[player][i];
 
         // test output for my one test sensor
         if (player == 0 && i == 0) {
@@ -147,10 +160,35 @@ int readPressure(int player, int sensor) {
   if (player == 0) {
     return analogRead(inputs[sensor]);
   } else {
-    digitalWrite(MUX_0, bitRead(sensor, 0));
-    digitalWrite(MUX_1, bitRead(sensor, 1));
-    digitalWrite(MUX_2, bitRead(sensor, 2));
+    uint8_t* port0 = muxSelectPorts[0];
+    uint8_t* port1 = muxSelectPorts[1];
+    uint8_t* port2 = muxSelectPorts[2];
+
+    switch (sensor) {
+      case 0: // 000
+        *port0 &= muxSelectPortMapsLow[0];
+        *port1 &= muxSelectPortMapsLow[1];
+        *port2 &= muxSelectPortMapsLow[2];
+        break;
+      case 1: // 001
+        *port0 |= muxSelectPortMapsHigh[0];
+        break;
+      case 2: // 010
+        *port0 &= muxSelectPortMapsLow[0];
+        *port1 |= muxSelectPortMapsHigh[1];
+        break;
+      case 3: // 011
+        *port0 |= muxSelectPortMapsHigh[0];
+        break;
+      case 4: // 100
+        *port0 &= muxSelectPortMapsLow[0];
+        *port1 &= muxSelectPortMapsLow[1];
+        *port2 |= muxSelectPortMapsHigh[2];
+        break;
+      default:
+        break;
+    }
     
-    return analogRead(MUX_INPUT);
+    return analogRead(muxInput);
   }
 }
