@@ -31,7 +31,6 @@ int releaseHysteresis = 8;
 bool states[NUM_PLAYERS][NUM_INPUTS];
 int releaseThresholds[NUM_PLAYERS][NUM_INPUTS];
 int lastReadings[NUM_PLAYERS][NUM_INPUTS];
-RunningSum* readings[NUM_PLAYERS][NUM_INPUTS];
 RunningSum* deltas[NUM_PLAYERS][NUM_INPUTS];
 
 // keep track of poll rate
@@ -57,7 +56,6 @@ void setup() {
   // setup some initial values
   for (int player = 0; player < NUM_PLAYERS; player++) {
     for (int i = 0; i < NUM_INPUTS; i++) {
-      readings[player][i] = new RunningSum(numReadings);
       deltas[player][i] = new RunningSum(numReadings);
       pinMode(outputs[player][i], OUTPUT);
       digitalWrite(outputs[player][i], HIGH);
@@ -77,7 +75,6 @@ void setup() {
       for (int i = 0; i < NUM_INPUTS; i++) {
         // keep a running record of the last X readings
         pressure = readPressure(player, i);
-        readings[player][i]->addValue(pressure);
     
         // calculate the newest delta if it's not the first reading
         if (r > 0) {
@@ -115,7 +112,6 @@ void loop() {
     for (int i = 0; i < NUM_INPUTS; i++) {
       // keep a running record of the last X readings
       pressure = readPressure(player, i);
-      readings[player][i]->addValue(pressure);
   
       // calculate the newest delta
       deltas[player][i]->addValue(pressure - lastReadings[player][i]);
