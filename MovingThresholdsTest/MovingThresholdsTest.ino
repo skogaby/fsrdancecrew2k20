@@ -94,6 +94,7 @@ void setup() {
 
 void loop() {
   // keep track of our poll rate
+  unsigned long startMicros = micros();
   long currentMillis = millis();
   long deltaMillis = currentMillis - lastMillis;
   loops++;
@@ -143,6 +144,12 @@ void loop() {
         *(outputPorts[player]) |= outputPortMapsHigh[player][i];
       }
     } 
+  }
+
+  unsigned long deltaMicros = micros() - startMicros;
+
+  if (deltaMicros < 1000) {
+    delayMicroseconds(986 - deltaMicros);
   }
 }
 
