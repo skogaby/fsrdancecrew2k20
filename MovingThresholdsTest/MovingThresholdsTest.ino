@@ -22,7 +22,7 @@ volatile uint8_t* muxSelectPorts[] = { &PORTC, &PORTC, &PORTD };
 
 // how far above the current baseline the readings need
 // to go to trigger a hit
-int deltaThreshold = 60;
+int deltaThresholds[2][5] = { { 80, 50, 80, 80, 80 }, { 80, 50, 80, 80, 80 } };
 
 // the percentage to multiple the delta threshold by
 // to add to the baseline as a release threshold
@@ -86,8 +86,8 @@ void setup() {
       pressure = readPressure(player, i);
       
       states[player][i] = false;
-      triggerThresholds[player][i] = pressure + deltaThreshold;
-      releaseThresholds[player][i] = pressure + (deltaThreshold * releaseThreshold);
+      triggerThresholds[player][i] = pressure + deltaThresholds[player][i];
+      releaseThresholds[player][i] = pressure + (deltaThresholds[player][i] * releaseThreshold);
     }
   }
 }
@@ -130,8 +130,8 @@ void loop() {
         // the last trigger. if it's been more than the configured period, re-establish
         // baselines for thresholds
         } else if (currentMillis - lastTriggerTimes[player][i] > calibrationPeriod) {          
-          triggerThresholds[player][i] = pressure + deltaThreshold;
-          releaseThresholds[player][i] = pressure + (deltaThreshold * releaseThreshold);
+          triggerThresholds[player][i] = pressure + deltaThresholds[player][i];
+          releaseThresholds[player][i] = pressure + (deltaThresholds[player][i] * releaseThreshold);
           lastTriggerTimes[player][i] = currentMillis;
         }
       // new release detected
