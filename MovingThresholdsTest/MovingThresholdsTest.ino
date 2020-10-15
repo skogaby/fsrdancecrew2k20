@@ -22,11 +22,11 @@ volatile uint8_t* muxSelectPorts[] = { &PORTC, &PORTC, &PORTD };
 
 // how far above the current baseline the readings need
 // to go to trigger a hit
-int deltaThreshold = 100;
+int deltaThreshold = 60;
 
 // the percentage to multiple the delta threshold by
 // to add to the baseline as a release threshold
-double releaseThreshold = 0.2;
+double releaseThreshold = 0.4;
 
 // how many milliseconds to wait between re-calibrations if
 // no inputs are detected
@@ -126,11 +126,6 @@ void loop() {
           
           // turn on the panel once we calculate the release threshold
           *(outputPorts[player]) &= outputPortMapsLow[player][i];
-  
-          // test output for my one test sensor
-          if (player == 0 && i == 0) {
-            Serial.println("Pressed");
-          }
         // the panel hasn't been triggered, so we'll check how long it's been since
         // the last trigger. if it's been more than the configured period, re-establish
         // baselines for thresholds
@@ -142,14 +137,10 @@ void loop() {
       // new release detected
       } else if (states[player][i] && (pressure < releaseThresholds[player][i])) {
         states[player][i] = false;
+        lastTriggerTimes[player][i] = currentMillis;
         
         // if the value is below the release threshold, turn off the panel
         *(outputPorts[player]) |= outputPortMapsHigh[player][i];
-
-        // test output for my one test sensor
-        if (player == 0 && i == 0) {
-          Serial.println("Released");
-        }
       }
     } 
   }
